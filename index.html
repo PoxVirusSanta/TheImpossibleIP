@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HA Pull-down: HERC5 on Ribosomes</title>
+  <style>
+    :root { --pad: 14px; }
+
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:#0b0f19;
+      color:#e9eefc;
+      display:grid;
+      place-items:center;
+      min-height:100vh;
+      padding:var(--pad);
+    }
+
+    .card{
+      width:min(1400px,100%);
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      padding: clamp(12px, 2.5vw, 18px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    h1{ font-size: clamp(18px, 3.2vw, 24px); margin:0 0 6px; }
+    p{ margin:0 0 12px; opacity:.9; line-height:1.35; font-size: 14px; }
+
+    .play{
+      position:relative;
+      height: 720px;
+      border-radius: 16px;
+      background:
+        radial-gradient(1200px 520px at 20% 10%, rgba(120,160,255,0.16), transparent 60%),
+        radial-gradient(900px 420px at 80% 90%, rgba(120,255,200,0.11), transparent 60%),
+        rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.18);
+      overflow:hidden;
+      touch-action:none;
+    }
+
+    /* ===== Tube at bottom ===== */
+    .tube-wrap{
+      position:absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: 240px;
+      height: 210px;
+      pointer-events:none;
+      display:grid;
+      place-items:end center;
+      z-index: 5;
+    }
+
+    .tube{
+      position:relative;
+      width: 240px;
+      height: 210px;
+      border-radius: 26px 26px 40px 40px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      overflow:hidden;
+    }
+
+    /* tube opening */
+    .tube::before{
+      content:"";
+      position:absolute;
+      left: 12px;
+      right: 12px;
+      top: 16px;
+      height: 40px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    /* tube inner liquid-ish */
+    .tube .fill{
+      position:absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      height: 72%;
+      border-radius: 18px 18px 34px 34px;
+      background: linear-gradient(180deg, rgba(120,255,220,0.10), rgba(120,160,255,0.06));
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .tube-label{
+      position:absolute;
+      top: 10px;
+      left: 18px;
+      font-size: 12px;
+      opacity: 0.85;
+      letter-spacing: 0.2px;
+    }
+
+    /* counts displayed inside tube */
+    .tube-count{
+      position:absolute;
+      right: 16px;
+      top: 10px;
+      font-size: 12px;
+      opacity: 0.9;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    /* ===== Complexes (moving left -> right) ===== */
+    .complex{
+      position:absolute;
+      width: 220px;
+      height: 120px;
+      pointer-events:none; /* allow only HA nub to be draggable */
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,0.22));
+      user-select:none;
+      z-index: 3;
+    }
+
+    /* Ribosome (simple stacked ovals) */
+    .ribosome{
+      position:absolute;
+      left: 22px;
+      bottom: 14px;
+      width: 150px;
+      height: 62px;
+    }
+    .ribo-oval{
+      position:absolute;
+      left: 0;
+      right: 0;
+      margin:auto;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(230,230,245,0.14);
+    }
+    .ribo-oval.one{ top: 18px; width: 150px; height: 34px; opacity: 0.9; }
+    .ribo-oval.two{ top: 4px;  width: 126px; height: 30px; opacity: 0.75; }
+    .ribo-oval.three{ top: 30px; width: 120px; height: 28px; opacity: 0.65; }
+
+    .ribo-label{
+      position:absolute;
+      left: 6px;
+      bottom: -4px;
+      font-size: 11px;
+      opacity: 0.70;
+    }
+
+    /* HERC5 blob sitting on ribosome */
+    .herc5{
+      position:absolute;
+      left: 62px;
+      bottom: 54px;
+      width: 96px;
+      height: 58px;
+      border-radius: 38% 30% 42% 28% / 58% 34% 62% 36%;
+      background: linear-gradient(135deg, rgba(120,170,255,0.34), rgba(255,255,255,0.05));
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .herc5::after{
+      content:"HERC5";
+      position:absolute;
+      left: 10px;
+      bottom: 6px;
+      font-size: 11px;
+      opacity: 0.75;
+      letter-spacing: 0.2px;
+    }
+
+    /* HA tag nub attached to HERC5 (this is the draggable handle) */
+    .ha{
+      position:absolute;
+      left: 144px;
+      bottom: 78px;
+      width: 58px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(255,220,120,0.22);
+      border: 1px solid rgba(255,220,120,0.40);
+      display:grid;
+      place-items:center;
+      font-weight: 900;
+      font-size: 12px;
+      color: rgba(255,240,200,0.95);
+      cursor: grab;
+      pointer-events:auto;
+      touch-action:none;
+      user-select:none;
+      box-shadow: 0 0 0 0 rgba(255,220,120,0);
+      transition: box-shadow 160ms ease, transform 140ms ease;
+    }
+    .ha:active{ cursor: grabbing; }
+    .ha.hot{
+      transform: scale(1.03);
+      box-shadow: 0 0 0 10px rgba(255,220,120,0.10);
+    }
+
+    /* thin linker from HERC5 to HA */
+    .ha::before{
+      content:"";
+      position:absolute;
+      left: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,220,120,0.20);
+      border: 1px solid rgba(255,220,120,0.22);
+    }
+
+    .hud{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    .pill{
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      opacity: 0.92;
+    }
+    button{
+      margin-left:auto;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.06);
+      color:#e9eefc;
+    }
+
+    /* Modal */
+    .modal{
+      position:fixed; inset:0;
+      display:none; place-items:center;
+      background: rgba(0,0,0,0.55);
+      padding: 18px;
+      z-index: 50;
+    }
+    .modal.show{ display:grid; }
+    .modal .box{
+      width: min(560px, 100%);
+      background:#101a2f;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    }
+    .box h2{ margin:0 0 8px; font-size:18px; }
+    .box .msg{ font-size: 15px; line-height:1.4; opacity:0.95; white-space: pre-wrap; }
+    .box .row{ display:flex; gap:10px; margin-top: 14px; justify-content: flex-end; }
+
+    /* small helper text region */
+    .hint{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>HA Pull-down: capture HERC5–ribosome complexes</h1>
+    <p>Grab complexes by the <b>HA</b> tag (top), drag them into the <b>tube</b> (bottom). When <b>5</b> are in the tube, you unlock the hint 🎁</p>
+
+    <div class="play" id="play" aria-label="Play area">
+      <div class="tube-wrap" id="tubeWrap">
+        <div class="tube" id="tube">
+          <div class="tube-label">Pull-down tube</div>
+          <div class="tube-count" id="tubeCount">0 / 5</div>
+          <div class="fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="pill" id="status">Captured: 0 / 5</div>
+      <div class="pill">Tip: drop inside the tube opening</div>
+      <button id="reset">Reset</button>
+    </div>
+
+    <div class="hint">Message text can be edited in the file, or via URL: <code>?msg=Your%20present%20is%20...</code></div>
+  </div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="box">
+      <h2>✅ Pull-down complete!</h2>
+      <div class="msg" id="msg"></div>
+      <div class="row">
+        <button id="close">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ===== Customizable message =====
+  const DEFAULT_MESSAGE =
+`You pulled down 5 complexes 🎉
+
+Your present is hidden:
+👉 (edit this message in index.html)
+or set it via the URL like ?msg=Your%20present%20is%20...`;
+
+  const params = new URLSearchParams(location.search);
+  const REVEAL_MESSAGE = params.get("msg") ? decodeURIComponent(params.get("msg")) : DEFAULT_MESSAGE;
+
+  const play = document.getElementById("play");
+  const tube = document.getElementById("tube");
+  const tubeCount = document.getElementById("tubeCount");
+  const status = document.getElementById("status");
+  const resetBtn = document.getElementById("reset");
+
+  const modal = document.getElementById("modal");
+  const msg = document.getElementById("msg");
+  const closeBtn = document.getElementById("close");
+
+  // ===== Game settings =====
+  const REQUIRED = 5;
+  const COMPLEX_COUNT = 9;     // how many are flowing on screen
+  const FLOW_MIN_V = 0.04;     // px/ms (slow)
+  const FLOW_MAX_V = 0.085;    // px/ms
+  const TOP_MIN_Y = 40;        // where complexes flow
+  const TOP_MAX_Y = 220;
+
+  let captured = 0;
+  let solved = false;
+
+  // Complex state array
+  const complexes = [];
+  let dragging = null; // { c, offsetX, offsetY, pointerId }
+
+  function rand(min, max){ return min + Math.random() * (max - min); }
+
+  function updateCounters(){
+    tubeCount.textContent = `${captured} / ${REQUIRED}`;
+    status.textContent = `Captured: ${captured} / ${REQUIRED}`;
+  }
+
+  function reveal(){
+    solved = true;
+    msg.textContent = REVEAL_MESSAGE;
+    modal.classList.add("show");
+    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+  }
+
+  // ===== Tube hit test =====
+  function inTube(complexEl){
+    // Accept if the complex center is inside the tube inner area (including opening)
+    const pr = play.getBoundingClientRect();
+    const tr = tube.getBoundingClientRect();
+    const cr = complexEl.getBoundingClientRect();
+
+    // Convert to play-local coordinates
+    const tubeLocal = {
+      left: tr.left - pr.left,
+      top: tr.top - pr.top,
+      right: tr.right - pr.left,
+      bottom: tr.bottom - pr.top
+    };
+
+    // inner "opening" region a bit below top
+    const inner = {
+      left: tubeLocal.left + 18,
+      right: tubeLocal.right - 18,
+      top: tubeLocal.top + 10,
+      bottom: tubeLocal.bottom - 16
+    };
+
+    const cx = (cr.left - pr.left) + cr.width/2;
+    const cy = (cr.top - pr.top) + cr.height/2;
+
+    return (cx > inner.left && cx < inner.right && cy > inner.top && cy < inner.bottom);
+  }
+
+  // ===== Build one complex =====
+  function createComplex(){
+    const el = document.createElement("div");
+    el.className = "complex";
+
+    // ribosome
+    const ribo = document.createElement("div");
+    ribo.className = "ribosome";
+    ribo.innerHTML = `
+      <div class="ribo-oval one"></div>
+      <div class="ribo-oval two"></div>
+      <div class="ribo-oval three"></div>
+      <div class="ribo-label">Ribosome</div>
+    `;
+    el.appendChild(ribo);
+
+    // HERC5
+    const h = document.createElement("div");
+    h.className = "herc5";
+    el.appendChild(h);
+
+    // HA handle
+    const ha = document.createElement("div");
+    ha.className = "ha";
+    ha.textContent = "HA";
+    el.appendChild(ha);
+
+    play.appendChild(el);
+
+    // initial position: start left off-screen and flow to right
+    const pr = play.getBoundingClientRect();
+    const x = rand(-260, -60);
+    const y = rand(TOP_MIN_Y, TOP_MAX_Y);
+    const v = rand(FLOW_MIN_V, FLOW_MAX_V);
+
+    const c = { el, ha, x, y, v, dragging:false, active:true };
+    setPos(c, x, y);
+
+    // pointer events only on HA
+    ha.addEventListener("pointerdown", (e) => onDown(e, c));
+    ha.addEventListener("pointermove", (e) => onMove(e, c));
+    ha.addEventListener("pointerup", () => onUp(c));
+    ha.addEventListener("pointercancel", () => onUp(c));
+
+    return c;
+  }
+
+  function setPos(c, x, y){
+    c.x = x; c.y = y;
+    c.el.style.left = x + "px";
+    c.el.style.top  = y + "px";
+  }
+
+  function onDown(e, c){
+    if (solved || !c.active) return;
+    c.dragging = true;
+    dragging = { c, pointerId: e.pointerId, offsetX: 0, offsetY: 0 };
+    c.ha.setPointerCapture(e.pointerId);
+
+    const cr = c.el.getBoundingClientRect();
+    dragging.offsetX = e.clientX - cr.left;
+    dragging.offsetY = e.clientY - cr.top;
+
+    c.ha.classList.add("hot");
+  }
+
+  function onMove(e, c){
+    if (!c.dragging || solved || !c.active) return;
+    const pr = play.getBoundingClientRect();
+    const x = (e.clientX - pr.left) - dragging.offsetX;
+    const y = (e.clientY - pr.top) - dragging.offsetY;
+
+    // constrain inside play
+    const maxX = pr.width - 220;
+    const maxY = pr.height - 120;
+    setPos(c, Math.max(0, Math.min(x, maxX)), Math.max(0, Math.min(y, maxY)));
+  }
+
+  function onUp(c){
+    if (!c.dragging || solved || !c.active) return;
+    c.dragging = false;
+    c.ha.classList.remove("hot");
+
+    // check tube drop
+    if (inTube(c.el)){
+      // captured
+      c.active = false;
+      c.el.style.display = "none";
+      captured += 1;
+      updateCounters();
+      if (captured >= REQUIRED) reveal();
+      else {
+        // respawn a new flowing complex to keep the stream going
+        respawn(c);
+      }
+    }
+  }
+
+  function respawn(c){
+    // turn it back on after a short delay (feels like a new complex enters)
+    setTimeout(() => {
+      if (solved) return;
+      c.el.style.display = "block";
+      c.active = true;
+      c.dragging = false;
+      const pr = play.getBoundingClientRect();
+      const x = rand(-260, -60);
+      const y = rand(TOP_MIN_Y, TOP_MAX_Y);
+      c.v = rand(FLOW_MIN_V, FLOW_MAX_V);
+      setPos(c, x, y);
+    }, 550);
+  }
+
+  // ===== Animation loop =====
+  let lastT = null;
+  function tick(t){
+    if (lastT == null) lastT = t;
+    const dt = Math.min(32, t - lastT);
+    lastT = t;
+
+    const pr = play.getBoundingClientRect();
+
+    if (!solved){
+      complexes.forEach(c => {
+        if (!c.active) return;
+        if (c.dragging) return;
+
+        // move left -> right
+        c.x += c.v * dt;
+
+        // wrap around
+        if (c.x > pr.width + 40){
+          c.x = rand(-260, -60);
+          c.y = rand(TOP_MIN_Y, TOP_MAX_Y);
+          c.v = rand(FLOW_MIN_V, FLOW_MAX_V);
+        }
+
+        setPos(c, c.x, c.y);
+      });
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  // ===== Reset =====
+  function reset(){
+    solved = false;
+    captured = 0;
+    updateCounters();
+    modal.classList.remove("show");
+
+    // clear existing complexes
+    complexes.splice(0).forEach(c => c.el.remove());
+
+    // rebuild
+    for (let i = 0; i < COMPLEX_COUNT; i++) complexes.push(createComplex());
+  }
+
+  resetBtn.addEventListener("click", reset);
+  closeBtn.addEventListener("click", () => modal.classList.remove("show"));
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("show"); });
+
+  // ===== Init =====
+  updateCounters();
+  for (let i = 0; i < COMPLEX_COUNT; i++) complexes.push(createComplex());
+  requestAnimationFrame(tick);
+
+  // Keep things sane on resize
+  window.addEventListener("resize", () => {
+    const pr = play.getBoundingClientRect();
+    complexes.forEach(c => {
+      if (!c.active) return;
+      c.x = Math.min(c.x, pr.width - 220);
+      c.y = Math.min(c.y, pr.height - 120);
+      setPos(c, c.x, c.y);
+    });
+  });
+</script>
+</body>
+</html>
