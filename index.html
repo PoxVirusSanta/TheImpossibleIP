@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HA Pull-down + TEV: HERC5 on Ribosomes</title>
+  <title>The Impossible IP</title>
   <style>
     :root { --pad: 14px; }
 
@@ -347,8 +347,8 @@
 
 <body>
   <div class="card">
-    <h1>HA Pull-down + TEV cleavage</h1>
-    <p>Step 1: Drag <b>TEV</b> onto <b>HA</b> to cleave (HA turns green). Step 2: Drag the cleaved complex into the <b>tube</b>. Capture <b>5</b> to unlock the hint 🎁</p>
+    <h1>Welcome to the impossible IP</h1>
+    <p>Step 1: Drag <b>TEV</b> onto <b>HA</b> to cleave (HA turns green). Step 2: Drag the cleaved complex into the <b>tube</b>.</p>
 
     <div class="play" id="play" aria-label="Play area">
       <div class="tube-wrap">
@@ -389,11 +389,10 @@
 <script>
   // ===== Customizable message =====
   const DEFAULT_MESSAGE =
-`You cleaved + pulled down 5 complexes 🎉
+`You did it, Santa is proud of you!!
 
-Your present is hidden:
-👉 (edit this message in index.html)
-or set it via the URL like ?msg=Your%20present%20is%20...`;
+Find your reward in the cupboard below your lab bench
+Merry Christmas!`;
 
   const params = new URLSearchParams(location.search);
   const REVEAL_MESSAGE = params.get("msg") ? decodeURIComponent(params.get("msg")) : DEFAULT_MESSAGE;
